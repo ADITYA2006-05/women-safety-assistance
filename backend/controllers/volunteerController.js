@@ -20,7 +20,7 @@ exports.toggleOnline = async (req, res) => {
       volunteer.isOnline = isOnline;
       volunteer.updatedAt = new Date();
     } else {
-      volunteer = await Volunteer.findOne({ userId });
+      volunteer = await Volunteer.findOne({ where: { userId } });
       if (!volunteer) {
         return res.status(404).json({ error: 'Volunteer record not found' });
       }
@@ -55,7 +55,7 @@ exports.updateLocation = async (req, res) => {
       volunteer.currentLocation = { type: 'Point', coordinates: [longitude, latitude] };
       volunteer.updatedAt = new Date();
     } else {
-      volunteer = await Volunteer.findOne({ userId });
+      volunteer = await Volunteer.findOne({ where: { userId } });
       if (!volunteer) {
         return res.status(404).json({ error: 'Volunteer record not found' });
       }
@@ -90,7 +90,7 @@ exports.getStatus = async (req, res) => {
     if (global.useInMemoryDb) {
       volunteer = dbStore.volunteers.find(v => v.userId === userId);
     } else {
-      volunteer = await Volunteer.findOne({ userId });
+      volunteer = await Volunteer.findOne({ where: { userId } });
     }
 
     if (!volunteer) {

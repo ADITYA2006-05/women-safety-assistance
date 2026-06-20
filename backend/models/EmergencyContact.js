@@ -1,19 +1,49 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
+const User = require('./User');
 
-const EmergencyContactSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  name: { type: String, required: true },
-  phone: { type: String, required: true },
-  relationship: { type: String, required: true },
-  isNotifiedBySOS: { type: Boolean, default: true },
-  createdAt: { type: Date, default: Date.now }
-});
+let EmergencyContact = {};
 
-let EmergencyContactModel;
-try {
-  EmergencyContactModel = mongoose.model('EmergencyContact');
-} catch (e) {
-  EmergencyContactModel = mongoose.model('EmergencyContact', EmergencyContactSchema);
+if (sequelize) {
+  EmergencyContact = sequelize.define('EmergencyContact', {
+    _id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true
+    },
+    userId: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: {
+        model: 'Users',
+        key: '_id'
+      },
+      onDelete: 'CASCADE'
+    },
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    phone: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    relationship: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    isNotifiedBySOS: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true
+    }
+  }, {
+    timestamps: true,
+    createdAt: 'createdAt',
+    updatedAt: false
+  });
+
+  EmergencyContact.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+  User.hasMany(EmergencyContact, { foreignKey: 'userId', as: 'emergencyContacts' });
 }
 
-module.exports = EmergencyContactModel;
+module.exports = EmergencyContact;

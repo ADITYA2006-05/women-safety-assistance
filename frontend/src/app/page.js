@@ -50,7 +50,7 @@ export default function Home() {
       <div className="grid md:grid-cols-3 gap-6 w-full px-4 mb-20">
         
         {/* User Card */}
-        <div className="glass-panel p-8 rounded-2xl border border-gray-800/80 transition-all hover:translate-y-[-4px] hover:border-rose-500/50 hover:shadow-lg hover:shadow-rose-950/20 group">
+        <Link href="/dashboard" className="glass-panel p-8 rounded-2xl border border-gray-800/80 transition-all hover:translate-y-[-4px] hover:border-rose-500/50 hover:shadow-lg hover:shadow-rose-950/20 group block">
           <div className="w-12 h-12 bg-rose-500/10 border border-rose-500/30 text-rose-400 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
             <Shield className="h-6 w-6" />
           </div>
@@ -59,10 +59,10 @@ export default function Home() {
             One-touch panic button instantly triggers real-time location streaming and broadcasts immediate notifications to contact lists and close responders.
           </p>
           <span className="text-xs font-bold text-rose-400 group-hover:underline">Explore User Console &rarr;</span>
-        </div>
+        </Link>
 
         {/* Volunteer Card */}
-        <div className="glass-panel p-8 rounded-2xl border border-gray-800/80 transition-all hover:translate-y-[-4px] hover:border-cyan-500/50 hover:shadow-lg hover:shadow-cyan-950/20 group">
+        <Link href="/volunteer" className="glass-panel p-8 rounded-2xl border border-gray-800/80 transition-all hover:translate-y-[-4px] hover:border-cyan-500/50 hover:shadow-lg hover:shadow-cyan-950/20 group block">
           <div className="w-12 h-12 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
             <HeartHandshake className="h-6 w-6" />
           </div>
@@ -71,10 +71,10 @@ export default function Home() {
             Join a local network of verified safety volunteers. Recieve emergency requests nearby and use active route directions to navigate and offer immediate assistance.
           </p>
           <span className="text-xs font-bold text-cyan-400 group-hover:underline">Join as a Volunteer &rarr;</span>
-        </div>
+        </Link>
 
         {/* Admin Card */}
-        <div className="glass-panel p-8 rounded-2xl border border-gray-800/80 transition-all hover:translate-y-[-4px] hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-950/20 group">
+        <Link href="/admin" className="glass-panel p-8 rounded-2xl border border-gray-800/80 transition-all hover:translate-y-[-4px] hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-950/20 group block">
           <div className="w-12 h-12 bg-purple-500/10 border border-purple-500/30 text-purple-400 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
             <Eye className="h-6 w-6" />
           </div>
@@ -83,7 +83,7 @@ export default function Home() {
             Verify responder profiles, oversee safety resources/safe zones, keep track of alert metrics, and evaluate KPIs using centralized admin boards.
           </p>
           <span className="text-xs font-bold text-purple-400 group-hover:underline">Access Admin Panel &rarr;</span>
-        </div>
+        </Link>
 
       </div>
 

@@ -1,28 +1,70 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
+const User = require('./User');
 
-const AlertSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  userName: { type: String, required: true },
-  userPhone: { type: String, required: true },
-  status: { type: String, enum: ['Active', 'Accepted', 'Resolved', 'Cancelled'], default: 'Active' },
-  location: {
-    type: { type: String, enum: ['Point'], default: 'Point' },
-    coordinates: { type: [Number], required: true } // [longitude, latitude]
-  },
-  responderId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  responderName: { type: String },
-  responderPhone: { type: String },
-  createdAt: { type: Date, default: Date.now },
-  resolvedAt: { type: Date }
-});
+let Alert = {};
 
-AlertSchema.index({ location: '2dsphere' });
+if (sequelize) {
+  Alert = sequelize.define('Alert', {
+    _id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true
+    },
+    userId: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: {
+        model: 'Users',
+        key: '_id'
+      },
+      onDelete: 'CASCADE'
+    },
+    userName: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    userPhone: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    status: {
+      type: DataTypes.ENUM('Active', 'Accepted', 'Resolved', 'Cancelled'),
+      defaultValue: 'Active'
+    },
+    location: {
+      type: DataTypes.GEOMETRY('POINT', 4326),
+      allowNull: false
+    },
+    responderId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'Users',
+        key: '_id'
+      },
+      onDelete: 'SET NULL'
+    },
+    responderName: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    responderPhone: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    resolvedAt: {
+      type: DataTypes.DATE,
+      allowNull: true
+    }
+  }, {
+    timestamps: true,
+    createdAt: 'createdAt',
+    updatedAt: false
+  });
 
-let AlertModel;
-try {
-  AlertModel = mongoose.model('Alert');
-} catch (e) {
-  AlertModel = mongoose.model('Alert', AlertSchema);
+  Alert.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+  Alert.belongsTo(User, { foreignKey: 'responderId', as: 'responder' });
 }
 
-module.exports = AlertModel;
+module.exports = Alert;

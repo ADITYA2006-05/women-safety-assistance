@@ -59,13 +59,13 @@ exports.register = async (req, res) => {
         user: { id: userId, name, email, role: assignedRole, phone }
       });
     } else {
-      const exists = await User.findOne({ email: email.toLowerCase() });
+      const exists = await User.findOne({ where: { email: email.toLowerCase() } });
       if (exists) return res.status(400).json({ error: 'Email already exists' });
 
       const salt = await bcrypt.genSalt(10);
       const passwordHash = await bcrypt.hash(password, salt);
 
-      const user = new User({
+      const user = await User.create({
         name,
         email: email.toLowerCase(),
         passwordHash,
@@ -73,10 +73,8 @@ exports.register = async (req, res) => {
         phone
       });
 
-      await user.save();
-
       if (assignedRole === 'Volunteer') {
-        const volunteer = new Volunteer({
+        await Volunteer.create({
           userId: user._id,
           name: user.name,
           phone: user.phone,
@@ -84,7 +82,6 @@ exports.register = async (req, res) => {
           isOnline: false,
           currentLocation: { type: 'Point', coordinates: [77.5946, 12.9716] }
         });
-        await volunteer.save();
       }
 
       const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
@@ -111,7 +108,7 @@ exports.login = async (req, res) => {
     if (global.useInMemoryDb) {
       user = dbStore.users.find(u => u.email.toLowerCase() === email.toLowerCase());
     } else {
-      user = await User.findOne({ email: email.toLowerCase() });
+      user = await User.findOne({ where: { email: email.toLowerCase() } });
     }
 
     if (!user) {
@@ -146,8 +143,8 @@ exports.getProfile = async (req, res) => {
       user = dbStore.users.find(u => u._id === userId);
       contacts = dbStore.emergencyContacts.filter(c => c.userId === userId);
     } else {
-      user = await User.findById(userId).select('-passwordHash');
-      contacts = await EmergencyContact.find({ userId });
+      user = await User.findByPk(userId, { attributes: { exclude: ['passwordHash'] } });
+      contacts = await EmergencyContact.findAll({ where: { userId } });
     }
 
     if (!user) return res.status(404).json({ error: 'User not found' });
@@ -182,16 +179,15 @@ exports.addEmergencyContact = async (req, res) => {
         createdAt: new Date()
       };
       dbStore.emergencyContacts.push(contact);
-      return res.status(211).json(contact);
+      return res.status(201).json(contact);
     } else {
-      const contact = new EmergencyContact({
+      const contact = await EmergencyContact.create({
         userId,
         name,
         phone,
         relationship,
         isNotifiedBySOS: true
       });
-      await contact.save();
       return res.status(201).json(contact);
     }
   } catch (error) {
@@ -215,8 +211,9 @@ exports.deleteEmergencyContact = async (req, res) => {
       }
       return res.json({ success: true, message: 'Contact removed' });
     } else {
-      const contact = await EmergencyContact.findOneAndDelete({ _id: contactId, userId });
+      const contact = await EmergencyContact.findOne({ where: { _id: contactId, userId } });
       if (!contact) return res.status(404).json({ error: 'Contact not found' });
+      await contact.destroy();
       return res.json({ success: true, message: 'Contact removed' });
     }
   } catch (error) {

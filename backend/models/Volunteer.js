@@ -1,25 +1,54 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
+const User = require('./User');
 
-const VolunteerSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  verificationStatus: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Pending' },
-  isOnline: { type: Boolean, default: false },
-  phone: { type: String }, // cached for speed
-  name: { type: String }, // cached for speed
-  currentLocation: {
-    type: { type: String, enum: ['Point'], default: 'Point' },
-    coordinates: { type: [Number], default: [0, 0] } // [longitude, latitude]
-  },
-  updatedAt: { type: Date, default: Date.now }
-});
+let Volunteer = {};
 
-VolunteerSchema.index({ currentLocation: '2dsphere' });
+if (sequelize) {
+  Volunteer = sequelize.define('Volunteer', {
+    _id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true
+    },
+    userId: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: {
+        model: 'Users',
+        key: '_id'
+      },
+      onDelete: 'CASCADE'
+    },
+    verificationStatus: {
+      type: DataTypes.ENUM('Pending', 'Approved', 'Rejected'),
+      defaultValue: 'Pending'
+    },
+    isOnline: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
+    },
+    phone: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    name: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    currentLocation: {
+      type: DataTypes.GEOMETRY('POINT', 4326),
+      allowNull: true
+    }
+  }, {
+    timestamps: true,
+    createdAt: false,
+    updatedAt: 'updatedAt'
+  });
 
-let VolunteerModel;
-try {
-  VolunteerModel = mongoose.model('Volunteer');
-} catch (e) {
-  VolunteerModel = mongoose.model('Volunteer', VolunteerSchema);
+  // Setup association
+  Volunteer.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+  User.hasOne(Volunteer, { foreignKey: 'userId', as: 'volunteer' });
 }
 
-module.exports = VolunteerModel;
+module.exports = Volunteer;

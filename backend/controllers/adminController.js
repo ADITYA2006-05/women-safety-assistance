@@ -18,7 +18,21 @@ exports.getVolunteers = async (req, res) => {
         };
       });
     } else {
-      volunteers = await Volunteer.find().populate('userId', 'name email phone role');
+      const dbVolunteers = await Volunteer.findAll({
+        include: [{
+          model: User,
+          as: 'user',
+          attributes: ['email', 'role']
+        }]
+      });
+      volunteers = dbVolunteers.map(vol => {
+        const plain = vol.get({ plain: true });
+        return {
+          ...plain,
+          email: plain.user ? plain.user.email : '',
+          role: plain.user ? plain.user.role : 'Volunteer'
+        };
+      });
     }
     res.json(volunteers);
   } catch (error) {
@@ -44,7 +58,7 @@ exports.verifyVolunteer = async (req, res) => {
       volunteer.verificationStatus = status;
       volunteer.updatedAt = new Date();
     } else {
-      volunteer = await Volunteer.findById(volunteerId);
+      volunteer = await Volunteer.findByPk(volunteerId);
       if (!volunteer) return res.status(404).json({ error: 'Volunteer not found' });
       volunteer.verificationStatus = status;
       volunteer.updatedAt = new Date();
@@ -72,7 +86,9 @@ exports.getUsers = async (req, res) => {
         createdAt: u.createdAt
       }));
     } else {
-      users = await User.find().select('-passwordHash');
+      users = await User.findAll({
+        attributes: { exclude: ['passwordHash'] }
+      });
     }
     res.json(users);
   } catch (error) {
@@ -95,10 +111,10 @@ exports.getDashboardStats = async (req, res) => {
       volunteersCount = dbStore.volunteers.length;
       incidentReportsCount = dbStore.incidentReports.length;
     } else {
-      alerts = await Alert.find();
-      usersCount = await User.countDocuments();
-      volunteersCount = await Volunteer.countDocuments();
-      incidentReportsCount = await IncidentReport.countDocuments();
+      alerts = await Alert.findAll();
+      usersCount = await User.count();
+      volunteersCount = await Volunteer.count();
+      incidentReportsCount = await IncidentReport.count();
     }
 
     // Calculations

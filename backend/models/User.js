@@ -1,19 +1,41 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
 
-const UserSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  passwordHash: { type: String, required: true },
-  role: { type: String, enum: ['User', 'Volunteer', 'Admin'], default: 'User' },
-  phone: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now }
-});
+let User = {};
 
-let UserModel;
-try {
-  UserModel = mongoose.model('User');
-} catch (e) {
-  UserModel = mongoose.model('User', UserSchema);
+if (sequelize) {
+  User = sequelize.define('User', {
+    _id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true
+    },
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    email: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true
+    },
+    passwordHash: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    role: {
+      type: DataTypes.ENUM('User', 'Volunteer', 'Admin'),
+      defaultValue: 'User'
+    },
+    phone: {
+      type: DataTypes.STRING,
+      allowNull: false
+    }
+  }, {
+    timestamps: true,
+    createdAt: 'createdAt',
+    updatedAt: false // Only keep createdAt, no updatedAt for User schema to match MongoDB schema
+  });
 }
 
-module.exports = UserModel;
+module.exports = User;

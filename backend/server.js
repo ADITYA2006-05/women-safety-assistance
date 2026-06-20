@@ -4,7 +4,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
 
-const connectDB = require('./config/db');
+const { connectDB } = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const alertRoutes = require('./routes/alertRoutes');
 const volunteerRoutes = require('./routes/volunteerRoutes');
@@ -39,7 +39,7 @@ app.use('/api/admin', adminRoutes);
 app.get('/health', (req, res) => {
   res.json({
     status: 'online',
-    database: global.useInMemoryDb ? 'in-memory-fallback' : 'mongodb',
+    database: global.useInMemoryDb ? 'in-memory-fallback' : 'postgres',
     timestamp: new Date()
   });
 });

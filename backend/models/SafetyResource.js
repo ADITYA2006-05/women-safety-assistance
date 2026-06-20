@@ -1,24 +1,40 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
 
-const SafetyResourceSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  type: { type: String, enum: ['SafeZone', 'PoliceStation', 'Hospital'], required: true },
-  location: {
-    type: { type: String, enum: ['Point'], default: 'Point' },
-    coordinates: { type: [Number], required: true } // [longitude, latitude]
-  },
-  address: { type: String, required: true },
-  phone: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now }
-});
+let SafetyResource = {};
 
-SafetyResourceSchema.index({ location: '2dsphere' });
-
-let SafetyResourceModel;
-try {
-  SafetyResourceModel = mongoose.model('SafetyResource');
-} catch (e) {
-  SafetyResourceModel = mongoose.model('SafetyResource', SafetyResourceSchema);
+if (sequelize) {
+  SafetyResource = sequelize.define('SafetyResource', {
+    _id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true
+    },
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    type: {
+      type: DataTypes.ENUM('SafeZone', 'PoliceStation', 'Hospital'),
+      allowNull: false
+    },
+    location: {
+      type: DataTypes.GEOMETRY('POINT', 4326),
+      allowNull: false
+    },
+    address: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    phone: {
+      type: DataTypes.STRING,
+      allowNull: false
+    }
+  }, {
+    timestamps: true,
+    createdAt: 'createdAt',
+    updatedAt: false
+  });
 }
 
-module.exports = SafetyResourceModel;
+module.exports = SafetyResource;

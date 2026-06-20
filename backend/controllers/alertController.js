@@ -1,3 +1,4 @@
+const { Op } = require('sequelize');
 const Alert = require('../models/Alert');
 const User = require('../models/User');
 const Volunteer = require('../models/Volunteer');
@@ -5,6 +6,7 @@ const IncidentReport = require('../models/IncidentReport');
 const EmergencyContact = require('../models/EmergencyContact');
 const { dbStore } = require('../models/dbStore');
 const { getDistanceKm } = require('../utils/proximity');
+const { sequelize } = require('../config/db');
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
 
@@ -24,8 +26,8 @@ exports.triggerAlert = async (req, res) => {
       user = dbStore.users.find(u => u._id === userId);
       contacts = dbStore.emergencyContacts.filter(c => c.userId === userId);
     } else {
-      user = await User.findById(userId);
-      contacts = await EmergencyContact.find({ userId });
+      user = await User.findByPk(userId);
+      contacts = await EmergencyContact.findAll({ where: { userId } });
     }
 
     if (!user) return res.status(404).json({ error: 'User not found' });
@@ -44,14 +46,13 @@ exports.triggerAlert = async (req, res) => {
       };
       dbStore.alerts.push(alert);
     } else {
-      alert = new Alert({
+      alert = await Alert.create({
         userId: user._id,
         userName: user.name,
         userPhone: user.phone,
         status: 'Active',
         location: { type: 'Point', coordinates: [longitude, latitude] }
       });
-      await alert.save();
     }
 
     // 2. Mock sending SMS to emergency contacts
@@ -72,18 +73,12 @@ exports.triggerAlert = async (req, res) => {
         return dist <= 5.0; // 5 km radius
       });
     } else {
-      // Geospatial query
-      nearbyVolunteers = await Volunteer.find({
-        verificationStatus: 'Approved',
-        isOnline: true,
-        currentLocation: {
-          $near: {
-            $geometry: {
-              type: 'Point',
-              coordinates: [longitude, latitude]
-            },
-            $maxDistance: 5000 // 5km in meters
-          }
+      // Geospatial query using PostGIS ST_DWithin
+      nearbyVolunteers = await Volunteer.findAll({
+        where: {
+          verificationStatus: 'Approved',
+          isOnline: true,
+          [Op.and]: sequelize.literal(`ST_DWithin("currentLocation", ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326)::geography, 5000)`)
         }
       });
     }
@@ -122,8 +117,8 @@ exports.acceptAlert = async (req, res) => {
       volunteer = dbStore.volunteers.find(v => v.userId === volunteerUserId);
       userRecord = dbStore.users.find(u => u._id === volunteerUserId);
     } else {
-      volunteer = await Volunteer.findOne({ userId: volunteerUserId });
-      userRecord = await User.findById(volunteerUserId);
+      volunteer = await Volunteer.findOne({ where: { userId: volunteerUserId } });
+      userRecord = await User.findByPk(volunteerUserId);
     }
 
     if (!volunteer || volunteer.verificationStatus !== 'Approved') {
@@ -143,7 +138,7 @@ exports.acceptAlert = async (req, res) => {
       alert.responderName = userRecord.name;
       alert.responderPhone = userRecord.phone;
     } else {
-      alert = await Alert.findById(alertId);
+      alert = await Alert.findByPk(alertId);
       if (!alert) return res.status(404).json({ error: 'Alert not found' });
       if (alert.status !== 'Active') {
         return res.status(400).json({ error: `Alert is already ${alert.status}` });
@@ -187,7 +182,7 @@ exports.updateAlertStatus = async (req, res) => {
       alert.status = status;
       alert.resolvedAt = new Date();
     } else {
-      alert = await Alert.findById(alertId);
+      alert = await Alert.findByPk(alertId);
       if (!alert) return res.status(404).json({ error: 'Alert not found' });
 
       alert.status = status;
@@ -216,7 +211,7 @@ exports.getAlertDetails = async (req, res) => {
     if (global.useInMemoryDb) {
       alert = dbStore.alerts.find(a => a._id === alertId);
     } else {
-      alert = await Alert.findById(alertId);
+      alert = await Alert.findByPk(alertId);
     }
 
     if (!alert) return res.status(404).json({ error: 'Alert not found' });
@@ -234,7 +229,12 @@ exports.getActiveAlerts = async (req, res) => {
     if (global.useInMemoryDb) {
       activeAlerts = dbStore.alerts.filter(a => a.status === 'Active' || a.status === 'Accepted');
     } else {
-      activeAlerts = await Alert.find({ status: { $in: ['Active', 'Accepted'] } }).sort({ createdAt: -1 });
+      activeAlerts = await Alert.findAll({ 
+        where: { 
+          status: { [Op.in]: ['Active', 'Accepted'] } 
+        }, 
+        order: [['createdAt', 'DESC']] 
+      });
     }
     res.json(activeAlerts);
   } catch (error) {
@@ -252,9 +252,12 @@ exports.getAlertHistory = async (req, res) => {
     if (global.useInMemoryDb) {
       history = dbStore.alerts.filter(a => a.userId === userId || a.responderId === userId);
     } else {
-      history = await Alert.find({
-        $or: [{ userId }, { responderId: userId }]
-      }).sort({ createdAt: -1 });
+      history = await Alert.findAll({
+        where: {
+          [Op.or]: [{ userId }, { responderId: userId }]
+        },
+        order: [['createdAt', 'DESC']]
+      });
     }
 
     res.json(history);
@@ -280,8 +283,8 @@ exports.submitReport = async (req, res) => {
       alert = dbStore.alerts.find(a => a._id === alertId);
       reporter = dbStore.users.find(u => u._id === authorId);
     } else {
-      alert = await Alert.findById(alertId);
-      reporter = await User.findById(authorId);
+      alert = await Alert.findByPk(alertId);
+      reporter = await User.findByPk(authorId);
     }
 
     if (!alert) return res.status(404).json({ error: 'Alert not found' });
@@ -301,7 +304,7 @@ exports.submitReport = async (req, res) => {
       };
       dbStore.incidentReports.push(report);
     } else {
-      report = new IncidentReport({
+      report = await IncidentReport.create({
         alertId,
         userId: alert.userId,
         userName: alert.userName,
@@ -310,7 +313,6 @@ exports.submitReport = async (req, res) => {
         notes,
         severity: severity || 'Medium'
       });
-      await report.save();
     }
 
     res.status(201).json({ success: true, report });

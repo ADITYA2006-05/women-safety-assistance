@@ -1,8 +1,7 @@
 const SafetyResource = require('../models/SafetyResource');
 const { dbStore } = require('../models/dbStore');
 const { getDistanceKm } = require('../utils/proximity');
-
-const generateId = () => Math.random().toString(36).substring(2, 15);
+const { sequelize } = require('../config/db');
 
 // Get All Safety Resources
 exports.getAllResources = async (req, res) => {
@@ -11,7 +10,7 @@ exports.getAllResources = async (req, res) => {
     if (global.useInMemoryDb) {
       resources = dbStore.safetyResources;
     } else {
-      resources = await SafetyResource.find();
+      resources = await SafetyResource.findAll();
     }
     res.json(resources);
   } catch (error) {
@@ -32,7 +31,7 @@ exports.createResource = async (req, res) => {
     let resource;
     if (global.useInMemoryDb) {
       resource = {
-        _id: 'sr_' + generateId(),
+        _id: 'sr_' + Math.random().toString(36).substring(2, 15),
         name,
         type,
         location: { type: 'Point', coordinates: [longitude, latitude] },
@@ -42,14 +41,13 @@ exports.createResource = async (req, res) => {
       };
       dbStore.safetyResources.push(resource);
     } else {
-      resource = new SafetyResource({
+      resource = await SafetyResource.create({
         name,
         type,
         location: { type: 'Point', coordinates: [longitude, latitude] },
         address,
         phone
       });
-      await resource.save();
     }
 
     res.status(201).json({ success: true, resource });
@@ -81,13 +79,9 @@ exports.getNearbyResources = async (req, res) => {
         return distance <= distLimit;
       });
     } else {
-      nearby = await SafetyResource.find({
-        location: {
-          $near: {
-            $geometry: { type: 'Point', coordinates: [lon, lat] },
-            $maxDistance: distLimit * 1000 // Convert km to meters
-          }
-        }
+      nearby = await SafetyResource.findAll({
+        where: sequelize.literal(`ST_DWithin("location", ST_SetSRID(ST_MakePoint(${lon}, ${lat}), 4326)::geography, ${distLimit * 1000})`),
+        order: sequelize.literal(`ST_Distance("location", ST_SetSRID(ST_MakePoint(${lon}, ${lat}), 4326)::geography) ASC`)
       });
     }
 

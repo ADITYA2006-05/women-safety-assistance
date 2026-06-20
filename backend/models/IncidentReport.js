@@ -1,21 +1,69 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
+const User = require('./User');
+const Alert = require('./Alert');
 
-const IncidentReportSchema = new mongoose.Schema({
-  alertId: { type: mongoose.Schema.Types.ObjectId, ref: 'Alert', required: true },
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  userName: { type: String, required: true },
-  volunteerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  volunteerName: { type: String },
-  notes: { type: String, required: true },
-  severity: { type: String, enum: ['Low', 'Medium', 'High'], default: 'Medium' },
-  createdAt: { type: Date, default: Date.now }
-});
+let IncidentReport = {};
 
-let IncidentReportModel;
-try {
-  IncidentReportModel = mongoose.model('IncidentReport');
-} catch (e) {
-  IncidentReportModel = mongoose.model('IncidentReport', IncidentReportSchema);
+if (sequelize) {
+  IncidentReport = sequelize.define('IncidentReport', {
+    _id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true
+    },
+    alertId: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: {
+        model: 'Alerts',
+        key: '_id'
+      },
+      onDelete: 'CASCADE'
+    },
+    userId: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: {
+        model: 'Users',
+        key: '_id'
+      },
+      onDelete: 'CASCADE'
+    },
+    userName: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    volunteerId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'Users',
+        key: '_id'
+      },
+      onDelete: 'SET NULL'
+    },
+    volunteerName: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    notes: {
+      type: DataTypes.TEXT,
+      allowNull: false
+    },
+    severity: {
+      type: DataTypes.ENUM('Low', 'Medium', 'High'),
+      defaultValue: 'Medium'
+    }
+  }, {
+    timestamps: true,
+    createdAt: 'createdAt',
+    updatedAt: false
+  });
+
+  IncidentReport.belongsTo(Alert, { foreignKey: 'alertId', as: 'alert' });
+  IncidentReport.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+  IncidentReport.belongsTo(User, { foreignKey: 'volunteerId', as: 'volunteer' });
 }
 
-module.exports = IncidentReportModel;
+module.exports = IncidentReport;
