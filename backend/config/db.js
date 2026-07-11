@@ -24,6 +24,9 @@ if (dbUrl) {
   global.useInMemoryDb = false;
 } else {
   console.warn('\n⚠️  No DATABASE_URL or POSTGRES_URI found in environment variables.');
+  if (process.env.VERCEL) {
+    console.error('❌ ERROR: Database URL is required on Vercel serverless deployments! In-memory fallbacks do not persist user data across requests.');
+  }
   console.warn('⚠️  Falling back to IN-MEMORY DATABASE. Data will not persist across restarts.\n');
   global.useInMemoryDb = true;
 }
@@ -46,6 +49,9 @@ const connectDB = async () => {
     return sequelize;
   } catch (error) {
     console.error(`❌ PostgreSQL connection error: ${error.message}`);
+    if (process.env.VERCEL) {
+      console.error('❌ ERROR: PostgreSQL connection failed on Vercel! In-memory fallbacks do not persist user data across requests.');
+    }
     console.warn('⚠️  Falling back to IN-MEMORY DATABASE. Data will not persist across restarts.\n');
     global.useInMemoryDb = true;
     return null;
