@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { Shield, ToggleLeft, ToggleRight, AlertOctagon, User, Phone, Check, MapPin, Compass, AlertCircle, FileText, Send, HelpCircle } from 'lucide-react';
 import useSocket from '@/hooks/useSocket';
+import { API_BASE_URL } from '@/config';
 
 const LeafletMap = dynamic(() => import('@/components/Map'), { ssr: false });
 
@@ -52,7 +53,7 @@ export default function VolunteerDashboard() {
     // Fetch initial profile status
     const fetchStatus = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/volunteers/status', {
+        const res = await fetch(`${API_BASE_URL}/api/volunteers/status`, {
           headers: { Authorization: `Bearer ${storedToken}` }
         });
         const data = await res.json();
@@ -74,7 +75,7 @@ export default function VolunteerDashboard() {
 
   const fetchActiveAlerts = async (authToken) => {
     try {
-      const res = await fetch('http://localhost:5000/api/alerts/active', {
+      const res = await fetch(`${API_BASE_URL}/api/alerts/active`, {
         headers: { Authorization: `Bearer ${authToken}` }
       });
       const data = await res.json();
@@ -171,7 +172,7 @@ export default function VolunteerDashboard() {
   const handleToggleOnline = async () => {
     const nextStatus = !isOnline;
     try {
-      const res = await fetch('http://localhost:5000/api/volunteers/toggle-online', {
+      const res = await fetch(`${API_BASE_URL}/api/volunteers/toggle-online`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -190,7 +191,7 @@ export default function VolunteerDashboard() {
   // Accept Distress SOS Alert
   const acceptIncident = async (alertId) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/alerts/${alertId}/accept`, {
+      const res = await fetch(`${API_BASE_URL}/api/alerts/${alertId}/accept`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -211,7 +212,7 @@ export default function VolunteerDashboard() {
   const resolveIncident = async (statusVal) => {
     if (!currentActiveIncident) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/alerts/${currentActiveIncident._id}/status`, {
+      const res = await fetch(`${API_BASE_URL}/api/alerts/${currentActiveIncident._id}/status`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -233,7 +234,7 @@ export default function VolunteerDashboard() {
     if (!currentActiveIncident || !reportNotes) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/alerts/${currentActiveIncident._id}/report`, {
+      const res = await fetch(`${API_BASE_URL}/api/alerts/${currentActiveIncident._id}/report`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -271,7 +272,7 @@ export default function VolunteerDashboard() {
 
     try {
       // 1. Post to backend to update location
-      await fetch('http://localhost:5000/api/volunteers/location', {
+      await fetch(`${API_BASE_URL}/api/volunteers/location`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

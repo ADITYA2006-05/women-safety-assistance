@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Users, AlertOctagon, HeartHandshake, Percent, Clock, Check, X, ShieldAlert, Plus, MapPin, Phone } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { API_BASE_URL } from '@/config';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -63,7 +64,7 @@ export default function AdminDashboard() {
   const fetchStats = async (authToken) => {
     setLoadingStats(true);
     try {
-      const res = await fetch('http://localhost:5000/api/admin/stats', {
+      const res = await fetch(`${API_BASE_URL}/api/admin/stats`, {
         headers: { Authorization: `Bearer ${authToken}` }
       });
       const data = await res.json();
@@ -81,7 +82,7 @@ export default function AdminDashboard() {
   const fetchVolunteers = async (authToken) => {
     setLoadingVols(true);
     try {
-      const res = await fetch('http://localhost:5000/api/admin/volunteers', {
+      const res = await fetch(`${API_BASE_URL}/api/admin/volunteers`, {
         headers: { Authorization: `Bearer ${authToken}` }
       });
       const data = await res.json();
@@ -95,7 +96,7 @@ export default function AdminDashboard() {
 
   const fetchActiveAlerts = async (authToken) => {
     try {
-      const res = await fetch('http://localhost:5000/api/alerts/active', {
+      const res = await fetch(`${API_BASE_URL}/api/alerts/active`, {
         headers: { Authorization: `Bearer ${authToken}` }
       });
       const data = await res.json();
@@ -107,7 +108,7 @@ export default function AdminDashboard() {
 
   const fetchUsers = async (authToken) => {
     try {
-      const res = await fetch('http://localhost:5000/api/admin/users', {
+      const res = await fetch(`${API_BASE_URL}/api/admin/users`, {
         headers: { Authorization: `Bearer ${authToken}` }
       });
       const data = await res.json();
@@ -120,7 +121,7 @@ export default function AdminDashboard() {
   // Verify / Approve / Reject volunteer profile
   const verifyVolunteer = async (volunteerId, targetStatus) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/volunteers/${volunteerId}/verify`, {
+      const res = await fetch(`${API_BASE_URL}/api/admin/volunteers/${volunteerId}/verify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -146,7 +147,7 @@ export default function AdminDashboard() {
     if (!name || !longitude || !latitude || !address || !phone) return;
 
     try {
-      const res = await fetch('http://localhost:5000/api/resources', {
+      const res = await fetch(`${API_BASE_URL}/api/resources`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -2,6 +2,7 @@ const { Sequelize } = require('sequelize');
 
 const dbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URI;
 let sequelize = null;
+let isConnected = false;
 
 if (dbUrl) {
   const sslRequired = dbUrl.includes('sslmode=require') || 
@@ -29,6 +30,7 @@ if (dbUrl) {
 
 const connectDB = async () => {
   if (global.useInMemoryDb || !sequelize) return null;
+  if (isConnected) return sequelize;
   try {
     await sequelize.authenticate();
     
@@ -40,6 +42,7 @@ const connectDB = async () => {
     await sequelize.sync({ alter: true });
     console.log('✅ PostgreSQL database schema synced.');
     
+    isConnected = true;
     return sequelize;
   } catch (error) {
     console.error(`❌ PostgreSQL connection error: ${error.message}`);

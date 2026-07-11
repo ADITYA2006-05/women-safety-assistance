@@ -2,8 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import { API_BASE_URL } from '@/config';
 
 export default function useSocket() {
   const socketRef = useRef(null);
@@ -11,7 +10,7 @@ export default function useSocket() {
 
   useEffect(() => {
     // Create socket connection
-    const socket = io(BACKEND_URL, {
+    const socket = io(API_BASE_URL, {
       autoConnect: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { Shield, Plus, Trash2, Phone, AlertTriangle, Users, Compass, Eye, X, Check, Bell } from 'lucide-react';
 import useSocket from '@/hooks/useSocket';
+import { API_BASE_URL } from '@/config';
 
 // Dynamically import Leaflet Map to avoid SSR errors
 const LeafletMap = dynamic(() => import('@/components/Map'), { ssr: false });
@@ -78,7 +79,7 @@ export default function UserDashboard() {
       setLoadingContacts(true);
       setLoadingHistory(true);
       try {
-        const profileRes = await fetch('http://localhost:5000/api/auth/profile', {
+        const profileRes = await fetch(`${API_BASE_URL}/api/auth/profile`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const profileData = await profileRes.json();
@@ -86,7 +87,7 @@ export default function UserDashboard() {
           setContacts(profileData.emergencyContacts || []);
         }
 
-        const historyRes = await fetch('http://localhost:5000/api/alerts/history', {
+        const historyRes = await fetch(`${API_BASE_URL}/api/alerts/history`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const historyData = await historyRes.json();
@@ -186,7 +187,7 @@ export default function UserDashboard() {
 
   const fetchHistory = async () => {
     try {
-      const historyRes = await fetch('http://localhost:5000/api/alerts/history', {
+      const historyRes = await fetch(`${API_BASE_URL}/api/alerts/history`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const historyData = await historyRes.json();
@@ -201,7 +202,7 @@ export default function UserDashboard() {
     if (!newContact.name || !newContact.phone || !newContact.relationship) return;
 
     try {
-      const res = await fetch('http://localhost:5000/api/auth/contacts', {
+      const res = await fetch(`${API_BASE_URL}/api/auth/contacts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -221,7 +222,7 @@ export default function UserDashboard() {
 
   const handleDeleteContact = async (id) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/auth/contacts/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/auth/contacts/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -247,7 +248,7 @@ export default function UserDashboard() {
 
   const triggerSOSEvent = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/alerts', {
+      const res = await fetch(`${API_BASE_URL}/api/alerts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -281,7 +282,7 @@ export default function UserDashboard() {
   const resolveCurrentAlert = async (statusVal) => {
     if (!currentAlert) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/alerts/${currentAlert._id}/status`, {
+      const res = await fetch(`${API_BASE_URL}/api/alerts/${currentAlert._id}/status`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

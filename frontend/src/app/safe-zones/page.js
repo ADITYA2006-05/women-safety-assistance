@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { MapPin, Search, Phone, Navigation, Compass, ShieldAlert, HeartPulse } from 'lucide-react';
+import { API_BASE_URL } from '@/config';
 
 const LeafletMap = dynamic(() => import('@/components/Map'), { ssr: false });
 
@@ -38,7 +39,7 @@ export default function SafeZonesPage() {
   const fetchResources = async (authToken) => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/resources', {
+      const res = await fetch(`${API_BASE_URL}/api/resources`, {
         headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
       });
       const data = await res.json();

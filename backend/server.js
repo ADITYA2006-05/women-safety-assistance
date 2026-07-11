@@ -28,6 +28,24 @@ global.io = io;
 app.use(cors());
 app.use(express.json());
 
+// Vercel Multi-Project monorepo rewrite support: strip /api/backend prefix if present
+app.use((req, res, next) => {
+  if (req.url.startsWith('/api/backend')) {
+    req.url = req.url.replace('/api/backend', '') || '/';
+  }
+  next();
+});
+
+// Database connection middleware for Serverless compatibility
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+  } catch (error) {
+    console.error('Database connection error in middleware:', error);
+  }
+  next();
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/alerts', alertRoutes);
@@ -58,4 +76,8 @@ const startServer = async () => {
   });
 };
 
-startServer();
+if (!process.env.VERCEL) {
+  startServer();
+}
+
+module.exports = app;
