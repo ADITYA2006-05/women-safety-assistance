@@ -11,7 +11,7 @@ const LeafletMap = dynamic(() => import('@/components/Map'), { ssr: false });
 
 export default function VolunteerDashboard() {
   const router = useRouter();
-  const { registerEvent, emitEvent } = useSocket();
+  const { registerEvent, emitEvent, isConnected, isPolling } = useSocket();
 
   // Auth State
   const [volunteer, setVolunteer] = useState(null);
@@ -70,10 +70,10 @@ export default function VolunteerDashboard() {
     };
 
     fetchStatus();
-    fetchActiveAlerts(storedToken);
+    fetchActiveAlerts(storedToken, parsedUser);
   }, [router]);
 
-  const fetchActiveAlerts = async (authToken) => {
+  const fetchActiveAlerts = async (authToken, currentVolunteer = volunteer) => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/alerts/active`, {
         headers: { Authorization: `Bearer ${authToken}` }
@@ -83,16 +83,31 @@ export default function VolunteerDashboard() {
         setActiveAlerts(data);
         // Find if there is an accepted alert by this volunteer
         const myActive = data.find(
-          a => a.status === 'Accepted' && a.responderId === volunteer?.id
+          a => a.status === 'Accepted' && a.responderId === currentVolunteer?.id
         );
-        if (myActive) {
-          setCurrentActiveIncident(myActive);
-        }
+        setCurrentActiveIncident(prev => {
+          if (prev && !myActive) {
+            alert(`Incident has been marked as Resolved or Cancelled by the user.`);
+            return null;
+          }
+          return myActive || null;
+        });
       }
     } catch (err) {
       console.error('Error fetching active alerts:', err);
     }
   };
+
+  // HTTP Polling fallback when socket is disconnected
+  useEffect(() => {
+    if (isConnected || !token || !volunteer) return;
+
+    const pollInterval = setInterval(() => {
+      fetchActiveAlerts(token, volunteer);
+    }, 5000);
+
+    return () => clearInterval(pollInterval);
+  }, [isConnected, token, volunteer]);
 
   // Websocket listeners for alerts
   useEffect(() => {

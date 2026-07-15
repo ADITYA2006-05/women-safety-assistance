@@ -215,7 +215,29 @@ exports.getAlertDetails = async (req, res) => {
     }
 
     if (!alert) return res.status(404).json({ error: 'Alert not found' });
-    res.json(alert);
+
+    // Look up responder's current location if alert has an accepted responder
+    let responderLocation = null;
+    if (alert.responderId) {
+      if (global.useInMemoryDb) {
+        const vol = dbStore.volunteers.find(v => v.userId === alert.responderId);
+        if (vol && vol.currentLocation) {
+          responderLocation = vol.currentLocation;
+        }
+      } else {
+        const vol = await Volunteer.findOne({ where: { userId: alert.responderId } });
+        if (vol && vol.currentLocation) {
+          responderLocation = vol.currentLocation;
+        }
+      }
+    }
+
+    const responseData = {
+      ...(alert.toJSON ? alert.toJSON() : alert),
+      responderLocation
+    };
+
+    res.json(responseData);
   } catch (error) {
     console.error('Get alert details error:', error);
     res.status(500).json({ error: 'Server error fetching alert' });

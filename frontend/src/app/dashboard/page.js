@@ -12,7 +12,7 @@ const LeafletMap = dynamic(() => import('@/components/Map'), { ssr: false });
 
 export default function UserDashboard() {
   const router = useRouter();
-  const { registerEvent, emitEvent } = useSocket();
+  const { registerEvent, emitEvent, isConnected, isPolling } = useSocket();
 
   // Authentication State
   const [user, setUser] = useState(null);
@@ -156,6 +156,44 @@ export default function UserDashboard() {
       removeVolLocation();
     };
   }, [currentAlert]);
+
+  // HTTP Polling fallback when socket is disconnected
+  useEffect(() => {
+    if (!currentAlert || isConnected) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/alerts/${currentAlert._id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const updatedAlert = await res.json();
+          setCurrentAlert(updatedAlert);
+          
+          if (updatedAlert.status === 'Resolved' || updatedAlert.status === 'Cancelled') {
+            setIsDistressActive(false);
+            setCurrentAlert(null);
+            setResponders({});
+            fetchHistory();
+          } else if (updatedAlert.status === 'Accepted' && updatedAlert.responderId) {
+            // Update responders mapping on map with coordinates from DB
+            setResponders(prev => ({
+              ...prev,
+              [updatedAlert.responderId]: {
+                name: updatedAlert.responderName,
+                phone: updatedAlert.responderPhone,
+                coords: updatedAlert.responderLocation ? updatedAlert.responderLocation.coordinates : (prev[updatedAlert.responderId]?.coords || [12.9725, 77.5950])
+              }
+            }));
+          }
+        }
+      } catch (err) {
+        console.error('Error polling alert status:', err);
+      }
+    }, 4000);
+
+    return () => clearInterval(pollInterval);
+  }, [currentAlert, isConnected, token]);
 
   // Build Map Markers dynamically
   useEffect(() => {
@@ -321,14 +359,25 @@ export default function UserDashboard() {
       currentVolCoords = [currentVolCoords[0] + lngDiff, currentVolCoords[1] + latDiff];
       stepCount++;
 
-      // Broadcast location share
-      emitEvent('volunteer-location-share', {
-        alertId,
-        volunteerId: 'simulated_vol_1',
-        name: 'Amit Patel (Proximity Responder)',
-        phone: '+91 9123456780',
-        coords: currentVolCoords
-      });
+      // Broadcast location share or update state locally if socket is offline
+      if (isConnected) {
+        emitEvent('volunteer-location-share', {
+          alertId,
+          volunteerId: 'simulated_vol_1',
+          name: 'Amit Patel (Proximity Responder)',
+          phone: '+91 9123456780',
+          coords: currentVolCoords
+        });
+      } else {
+        setResponders(prev => ({
+          ...prev,
+          'simulated_vol_1': {
+            name: 'Amit Patel (Proximity Responder)',
+            phone: '+91 9123456780',
+            coords: currentVolCoords
+          }
+        }));
+      }
     }, 2500);
   };
 

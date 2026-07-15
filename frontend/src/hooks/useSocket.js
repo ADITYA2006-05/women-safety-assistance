@@ -7,19 +7,22 @@ import { API_BASE_URL } from '@/config';
 export default function useSocket() {
   const socketRef = useRef(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [isPolling, setIsPolling] = useState(false);
 
   useEffect(() => {
     // Create socket connection
     const socket = io(API_BASE_URL, {
       autoConnect: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000
+      reconnectionAttempts: 3,
+      reconnectionDelay: 1000,
+      timeout: 3000
     });
 
     socketRef.current = socket;
 
     socket.on('connect', () => {
       setIsConnected(true);
+      setIsPolling(false);
       console.log('⚡ Socket connected:', socket.id);
     });
 
@@ -28,7 +31,21 @@ export default function useSocket() {
       console.log('🔌 Socket disconnected');
     });
 
+    socket.on('connect_error', (error) => {
+      console.warn('⚠️ Socket connection error, using polling fallback:', error.message);
+      setIsPolling(true);
+    });
+
+    // Safety timeout: if not connected in 3 seconds, assume polling mode
+    const timer = setTimeout(() => {
+      if (!socket.connected) {
+        console.log('⌛ Socket connection timed out. Falling back to HTTP polling.');
+        setIsPolling(true);
+      }
+    }, 3000);
+
     return () => {
+      clearTimeout(timer);
       if (socket) {
         socket.disconnect();
       }
@@ -55,6 +72,7 @@ export default function useSocket() {
   return {
     socket: socketRef.current,
     isConnected,
+    isPolling,
     emitEvent,
     registerEvent
   };

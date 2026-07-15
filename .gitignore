@@ -23,3 +23,7 @@ backend/logs/
 *.njsproj
 *.sln
 *.sw?
+
+# Large media files
+*.mp4
+*.zip

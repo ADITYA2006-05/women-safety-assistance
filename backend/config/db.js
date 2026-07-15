@@ -42,7 +42,11 @@ const connectDB = async () => {
     console.log('✅ Connected to PostgreSQL successfully (PostGIS checked).');
     
     // Sync models
-    await sequelize.sync({ alter: true });
+    if (process.env.VERCEL) {
+      await sequelize.sync();
+    } else {
+      await sequelize.sync({ alter: true });
+    }
     console.log('✅ PostgreSQL database schema synced.');
     
     isConnected = true;
